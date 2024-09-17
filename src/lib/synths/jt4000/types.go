@@ -1,12 +1,18 @@
 package jt4000
 
-import "gitlab.com/gomidi/midi/v2/drivers"
+import (
+	"sync"
+
+	"gitlab.com/gomidi/midi/v2/drivers"
+)
 
 type Synth struct {
-	inPort  drivers.In
-	inStop  func()
-	outPort drivers.Out
-	Patches []Patch
+	inPort       drivers.In
+	inStop       func()
+	outPort      drivers.Out
+	Patches      []Patch
+	CurrentPatch Patch
+	sync.WaitGroup
 }
 
 type Patch struct {
