@@ -59,7 +59,6 @@ func (s *Synth) inMsgListen() {
 		case msg.GetSysEx(&bt):
 			log.Println("received sysex")
 			parseIncomingSysex(bt)
-			// parseSinglePatch(bt)
 		case msg.GetNoteStart(&ch, &key, &vel):
 			fmt.Printf("starting note %s on channel %v with velocity %v\n", midi.Note(key), ch, vel)
 		case msg.GetNoteEnd(&ch, &key):
@@ -108,17 +107,24 @@ func parseIncomingSysex(data []byte) (err error) {
 	}
 	if bytes.HasPrefix(data, []byte{0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x15}) {
 		fmt.Println("Single Patch")
-		patch, err := parseSinglePatch(data[7:71])
+		patch, err := parsePatch(data[7:71])
 		spew.Dump(patch, err)
 	} else if bytes.HasPrefix(data, []byte{0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x10}) {
 		fmt.Println("All Patches")
+		for i := 7; i+64 <= len(data); i += 64 {
+			patch, err := parsePatch(data[i : i+64])
+			if err != nil {
+				return err
+			}
+			spew.Dump(patch)
+		}
 	}
 	// patch := parseSinglePatch(data[:64])
 
 	return
 }
 
-func parseSinglePatch(data []byte) (patch Patch, err error) {
+func parsePatch(data []byte) (patch Patch, err error) {
 	if len(data) != 64 {
 		return patch, errors.New("patch data length is not 64")
 	}
@@ -159,12 +165,12 @@ func parseSinglePatch(data []byte) (patch Patch, err error) {
 	patch.VCFRelease = data[17]
 	patch.VCFAmount = data[22]
 
-	patch.VCFCutoff = data[5]
-	patch.VCFResonance = data[6]
-	patch.VCAAttack = data[11]
-	patch.VCADecay = data[12]
-	patch.VCASustain = data[13]
-	patch.VCARelease = data[14]
+	patch.VCFCutoff = data[12]
+	patch.VCFResonance = data[13]
+	patch.VCAAttack = data[18]
+	patch.VCADecay = data[19]
+	patch.VCASustain = data[20]
+	patch.VCARelease = data[21]
 
 	return
 }
