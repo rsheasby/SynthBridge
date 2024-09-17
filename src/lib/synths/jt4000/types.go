@@ -10,27 +10,48 @@ type Synth struct {
 }
 
 type Patch struct {
-	Name             string
-	Osc1Wave         OscWave
-	Osc1Adj          uint8
-	Osc1Coarse       uint8
-	Osc1Fine         uint8
-	Osc2Wave         OscWave
-	Osc2Adj          uint8
-	Osc2Coarse       uint8
-	Osc2Fine         uint8
-	OscBalance       uint8
+	Name string
+
+	Osc1Wave   OscWave
+	Osc1Adj    uint8
+	Osc1Coarse uint8
+	Osc1Fine   uint8
+
+	Osc2Wave   OscWave
+	Osc2Adj    uint8
+	Osc2Coarse uint8
+	Osc2Fine   uint8
+
+	OscBalance uint8
+
 	PortamentoAmount uint8
 	PortamentoMode   PortamentoMode
-	RingModAmount    uint8
-	RingModEnabled   bool
-	LFO1Wave         LFOWave
-	LFO1Destination  LFODestination
-	LFO1Speed        uint8
-	LFO1Amount       uint8
-	LFO2Wave         LFOWave
-	LFO2Speed        uint8
-	LFO2Amount       uint8
+
+	RingModAmount  uint8
+	RingModEnabled bool
+
+	LFO1Wave        LFOWave
+	LFO1Destination LFODestination
+	LFO1Speed       uint8
+	LFO1Amount      uint8
+
+	LFO2Wave   LFOWave
+	LFO2Speed  uint8
+	LFO2Amount uint8
+
+	VCFAttack  uint8
+	VCFDecay   uint8
+	VCFSustain uint8
+	VCFRelease uint8
+	VCFAmount  uint8 // MIDI CC 47
+
+	VCFCutoff    uint8
+	VCFResonance uint8
+
+	VCAAttack  uint8
+	VCADecay   uint8
+	VCASustain uint8
+	VCARelease uint8
 }
 
 type OscWave byte

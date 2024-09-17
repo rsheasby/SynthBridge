@@ -19,5 +19,11 @@ func main() {
 		return
 	}
 	synth.GetCurrentPatch()
-	select {}
+	for {
+		fmt.Scanln()
+		err := synth.GetCurrentPatch()
+		if err != nil {
+			fmt.Println("Error getting current patch:", err)
+		}
+	}
 }
