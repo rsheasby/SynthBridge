@@ -2,6 +2,13 @@ package utils
 
 import "math"
 
+func MapBool(val bool) uint8 {
+	if val {
+		return 127
+	}
+	return 0
+}
+
 func Map24(val uint8) uint8 {
 	return uint8(math.Ceil(float64(val) * 127.0 / 24.0))
 }

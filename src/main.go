@@ -16,37 +16,15 @@ func main() {
 
 	var val int
 	for {
-		// fmt.Scanln()
-		// val = (val + 1) % 100
+		fmt.Print("Enter value: ")
+		fmt.Scanf("%d", &val)
+		value := uint8(val)
 
-		// // Set the oscillator 1 fine adjustment to the provided value
-		// err := synth.SetOsc1Adj(uint8(val))
-		// if err != nil {
-		// 	fmt.Printf("Error setting oscillator 1 fine adjustment: %s\n", err)
-		// } else {
-		// 	fmt.Printf("Set oscillator 1 fine adjustment to %d\n", val)
-		// }
-
-		// fmt.Scanln()
-		// val = (val + 1) % 25
-
-		// // Set the oscillator 1 fine adjustment to the provided value
-		// err := synth.SetOsc1Coarse(uint8(val))
-		// if err != nil {
-		// 	fmt.Printf("Error setting oscillator 1 coarse adjustment: %s\n", err)
-		// } else {
-		// 	fmt.Printf("Set oscillator 1 coarse adjustment to %d\n", val)
-		// }
-
-		fmt.Scanln()
-		val = (val + 1) % 64
-
-		// Set the oscillator balance to the provided value
-		err := synth.SetOscBalance(uint8(val))
+		err := synth.SetPortamentoAmount(value)
 		if err != nil {
-			fmt.Printf("Error setting oscillator balance: %s\n", err)
+			fmt.Printf("Error: %s\n", err)
 		} else {
-			fmt.Printf("Set oscillator balance to %d\n", val)
+			fmt.Println("Portamento amount set successfully.")
 		}
 	}
 }

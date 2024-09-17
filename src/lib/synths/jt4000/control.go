@@ -131,6 +131,34 @@ func (s *Synth) SetOscBalance(val uint8) error {
 	return nil
 }
 
+func (s *Synth) SetPortamentoAmount(val uint8) error {
+	err := s.setValue(5, utils.Map99(val))
+	if err != nil {
+		return err
+	}
+	s.LivePatch.PortamentoAmount = val
+	return nil
+}
+
+func (s *Synth) SetRingModAmount(val uint8) error {
+	err := s.setValue(95, utils.Map99(val))
+	if err != nil {
+		return err
+	}
+	s.LivePatch.RingModAmount = val
+	return nil
+}
+
+func (s *Synth) SetRingModEnabled(val bool) error {
+	midiVal := utils.MapBool(val)
+	err := s.setValue(96, midiVal)
+	if err != nil {
+		return err
+	}
+	s.LivePatch.RingModEnabled = val
+	return nil
+}
+
 func (s *Synth) BruteforceSet(startCC, endCC, value uint8) error {
 	if startCC > endCC {
 		return errors.New("startCC must be less than or equal to endCC")
