@@ -30,7 +30,7 @@ type Patch struct {
 	Osc2Coarse uint8
 	Osc2Fine   uint8
 
-	OscBalance uint8
+	OscBalance uint8 // MIDI CC 29
 
 	PortamentoAmount uint8
 	PortamentoMode   PortamentoMode

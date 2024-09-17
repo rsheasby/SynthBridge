@@ -14,23 +14,39 @@ func main() {
 
 	synth := jt4000.NewSynth(inPorts[0], outPorts[0])
 
+	var val int
 	for {
-		var input string
-		fmt.Scanln(&input)
-		// Parse input as int
-		var val int
-		_, err := fmt.Sscanf(input, "%d", &val)
-		if err != nil {
-			fmt.Println("Invalid input, please enter an integer value.")
-			continue
-		}
+		// fmt.Scanln()
+		// val = (val + 1) % 100
 
-		// Adjust osc1 to provided value
-		err = synth.SetOsc1Coarse(uint8(val))
+		// // Set the oscillator 1 fine adjustment to the provided value
+		// err := synth.SetOsc1Adj(uint8(val))
+		// if err != nil {
+		// 	fmt.Printf("Error setting oscillator 1 fine adjustment: %s\n", err)
+		// } else {
+		// 	fmt.Printf("Set oscillator 1 fine adjustment to %d\n", val)
+		// }
+
+		// fmt.Scanln()
+		// val = (val + 1) % 25
+
+		// // Set the oscillator 1 fine adjustment to the provided value
+		// err := synth.SetOsc1Coarse(uint8(val))
+		// if err != nil {
+		// 	fmt.Printf("Error setting oscillator 1 coarse adjustment: %s\n", err)
+		// } else {
+		// 	fmt.Printf("Set oscillator 1 coarse adjustment to %d\n", val)
+		// }
+
+		fmt.Scanln()
+		val = (val + 1) % 64
+
+		// Set the oscillator balance to the provided value
+		err := synth.SetOscBalance(uint8(val))
 		if err != nil {
-			fmt.Printf("Error setting Osc1 coarse: %s\n", err)
+			fmt.Printf("Error setting oscillator balance: %s\n", err)
 		} else {
-			fmt.Printf("Osc1 coarse set to %d\n", val)
+			fmt.Printf("Set oscillator balance to %d\n", val)
 		}
 	}
 }
