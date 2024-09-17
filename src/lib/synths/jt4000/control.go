@@ -7,6 +7,15 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
+func (s *Synth) setValue(cc, maxRange, percentVal uint8) error {
+	if percentVal > maxRange {
+		percentVal = maxRange
+	}
+	midiVal := utils.Uint8Map(percentVal, 0, maxRange, 0, 127)
+	msg := midi.ControlChange(s.MidiChannel, cc, midiVal)
+	return s.outPort.Send(msg)
+}
+
 func (s *Synth) SetOsc1Wave(wave OscWave) error {
 	val := 0
 	if wave == OscWaveOff {
@@ -38,16 +47,29 @@ func (s *Synth) SetOsc1Wave(wave OscWave) error {
 }
 
 func (s *Synth) SetOsc1Adj(val uint8) error {
-	if val > 99 {
-		val = 99
-	}
-	midiVal := utils.Uint8Map(val, 0, 99, 0, 127)
-	msg := midi.ControlChange(s.MidiChannel, 113, midiVal)
-	err := s.outPort.Send(msg)
+	err := s.setValue(113, 99, val)
 	if err != nil {
 		return err
 	}
 	s.LivePatch.Osc1Adj = val
+	return nil
+}
+
+func (s *Synth) SetOsc1Coarse(val uint8) error {
+	err := s.setValue(115, 24, val)
+	if err != nil {
+		return err
+	}
+	s.LivePatch.Osc1Coarse = val
+	return nil
+}
+
+func (s *Synth) SetOsc1Fine(val uint8) error {
+	err := s.setValue(111, 99, val)
+	if err != nil {
+		return err
+	}
+	s.LivePatch.Osc1Fine = val
 	return nil
 }
 
@@ -78,15 +100,28 @@ func (s *Synth) SetOsc2Wave(wave OscWave) error {
 }
 
 func (s *Synth) SetOsc2Adj(val uint8) error {
-	if val > 99 {
-		val = 99
-	}
-	midiVal := utils.Uint8Map(val, 0, 99, 0, 127)
-	msg := midi.ControlChange(s.MidiChannel, 114, midiVal)
-	err := s.outPort.Send(msg)
+	err := s.setValue(114, 99, val)
 	if err != nil {
 		return err
 	}
-	s.LivePatch.Osc1Adj = val
+	s.LivePatch.Osc2Adj = val
+	return nil
+}
+
+func (s *Synth) SetOsc2Coarse(val uint8) error {
+	err := s.setValue(116, 24, val)
+	if err != nil {
+		return err
+	}
+	s.LivePatch.Osc2Coarse = val
+	return nil
+}
+
+func (s *Synth) SetOsc2Fine(val uint8) error {
+	err := s.setValue(112, 99, val)
+	if err != nil {
+		return err
+	}
+	s.LivePatch.Osc2Fine = val
 	return nil
 }

@@ -26,11 +26,11 @@ func main() {
 		}
 
 		// Adjust osc1 to provided value
-		err = synth.SetOsc2Adj(uint8(val))
+		err = synth.SetOsc1Coarse(uint8(val))
 		if err != nil {
-			fmt.Printf("Error setting Osc2 adjustment: %s\n", err)
+			fmt.Printf("Error setting Osc1 coarse: %s\n", err)
 		} else {
-			fmt.Printf("Osc2 adjustment set to %d\n", val)
+			fmt.Printf("Osc1 coarse set to %d\n", val)
 		}
 	}
 }
