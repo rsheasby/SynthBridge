@@ -13,26 +13,24 @@ func main() {
 	outPorts := midi.GetOutPorts()
 
 	synth := jt4000.NewSynth(inPorts[0], outPorts[0])
-	waves := []jt4000.OscWave{
-		jt4000.OscWaveOff,
-		jt4000.OscWaveTriangle,
-		jt4000.OscWaveSquare,
-		jt4000.OscWavePWM,
-		jt4000.OscWaveSaw,
-		jt4000.OscWaveNoise,
-	}
-
-	currentWaveIndex := 0
 
 	for {
 		var input string
 		fmt.Scanln(&input)
-		currentWaveIndex = (currentWaveIndex + 1) % len(waves)
-		err := synth.SetOsc2Wave(waves[currentWaveIndex])
+		// Parse input as int
+		var val int
+		_, err := fmt.Sscanf(input, "%d", &val)
 		if err != nil {
-			fmt.Println("Error setting Osc2 wave:", err)
+			fmt.Println("Invalid input, please enter an integer value.")
+			continue
+		}
+
+		// Adjust osc1 to provided value
+		err = synth.SetOsc1Adj(uint8(val))
+		if err != nil {
+			fmt.Printf("Error setting Osc1 adjustment: %s\n", err)
 		} else {
-			fmt.Println("Osc2 wave set to:", waves[currentWaveIndex])
+			fmt.Printf("Osc1 adjustment set to %d\n", val)
 		}
 	}
 }
