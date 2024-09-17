@@ -76,3 +76,17 @@ func (s *Synth) SetOsc2Wave(wave OscWave) error {
 	s.LivePatch.Osc2Wave = wave
 	return nil
 }
+
+func (s *Synth) SetOsc2Adj(val uint8) error {
+	if val > 99 {
+		val = 99
+	}
+	midiVal := utils.Uint8Map(val, 0, 99, 0, 127)
+	msg := midi.ControlChange(s.MidiChannel, 114, midiVal)
+	err := s.outPort.Send(msg)
+	if err != nil {
+		return err
+	}
+	s.LivePatch.Osc1Adj = val
+	return nil
+}
