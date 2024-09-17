@@ -14,6 +14,7 @@ func NewSynth(inPort drivers.In, outPort drivers.Out) (s *Synth) {
 	s = &Synth{inPort: inPort, outPort: outPort}
 	s.openPorts()
 	s.GetCurrentPatch()
+	s.LivePatch = s.CurrentPatch
 	time.Sleep(10 * time.Millisecond)
 	s.GetAllPatches()
 	return

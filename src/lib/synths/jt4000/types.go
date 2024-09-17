@@ -7,12 +7,14 @@ import (
 )
 
 type Synth struct {
+	sync.WaitGroup
 	inPort       drivers.In
 	inStop       func()
 	outPort      drivers.Out
+	MidiChannel  uint8
 	Patches      []Patch
 	CurrentPatch Patch
-	sync.WaitGroup
+	LivePatch    Patch
 }
 
 type Patch struct {
