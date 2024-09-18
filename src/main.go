@@ -14,17 +14,16 @@ func main() {
 
 	synth := jt4000.NewSynth(inPorts[0], outPorts[0])
 
-	var val int
+	var val string
+	var param = synth.SelectionParams[3]
+	fmt.Printf("Updating Param: %s\n", param.Name)
 	for {
 		fmt.Print("Enter value: ")
-		fmt.Scanf("%d", &val)
-		value := uint8(val)
+		fmt.Scanf("%s", &val)
 
-		err := synth.SetPortamentoAmount(value)
+		err := param.SetValue(val)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
-		} else {
-			fmt.Println("Portamento amount set successfully.")
 		}
 	}
 }

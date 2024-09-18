@@ -3,7 +3,6 @@ package jt4000
 import (
 	"errors"
 
-	"github.com/rsheasby/SynthBridge/lib/utils"
 	"gitlab.com/gomidi/midi/v2"
 )
 
@@ -43,7 +42,7 @@ func (s *Synth) SetOsc1Wave(wave OscWave) error {
 }
 
 func (s *Synth) SetOsc1Adj(val uint8) error {
-	err := s.setValue(113, utils.Map99(val))
+	err := s.setValue(113, mapToMidi(int(val), 99))
 	if err != nil {
 		return err
 	}
@@ -52,7 +51,7 @@ func (s *Synth) SetOsc1Adj(val uint8) error {
 }
 
 func (s *Synth) SetOsc1Coarse(val uint8) error {
-	err := s.setValue(115, utils.Map24(val))
+	err := s.setValue(115, mapToMidi(int(val), 24))
 	if err != nil {
 		return err
 	}
@@ -61,7 +60,7 @@ func (s *Synth) SetOsc1Coarse(val uint8) error {
 }
 
 func (s *Synth) SetOsc1Fine(val uint8) error {
-	err := s.setValue(111, utils.Map99(val))
+	err := s.setValue(111, mapToMidi(int(val), 99))
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,7 @@ func (s *Synth) SetOsc2Wave(wave OscWave) error {
 }
 
 func (s *Synth) SetOsc2Adj(val uint8) error {
-	err := s.setValue(114, utils.Map99(val))
+	err := s.setValue(114, mapToMidi(int(val), 99))
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,7 @@ func (s *Synth) SetOsc2Adj(val uint8) error {
 }
 
 func (s *Synth) SetOsc2Coarse(val uint8) error {
-	err := s.setValue(116, utils.Map24(val))
+	err := s.setValue(116, mapToMidi(int(val), 24))
 	if err != nil {
 		return err
 	}
@@ -114,7 +113,7 @@ func (s *Synth) SetOsc2Coarse(val uint8) error {
 }
 
 func (s *Synth) SetOsc2Fine(val uint8) error {
-	err := s.setValue(112, utils.Map99(val))
+	err := s.setValue(112, mapToMidi(int(val), 99))
 	if err != nil {
 		return err
 	}
@@ -123,7 +122,7 @@ func (s *Synth) SetOsc2Fine(val uint8) error {
 }
 
 func (s *Synth) SetOscBalance(val uint8) error {
-	err := s.setValue(29, utils.Map63(val))
+	err := s.setValue(29, mapToMidi(int(val), 63))
 	if err != nil {
 		return err
 	}
@@ -132,7 +131,7 @@ func (s *Synth) SetOscBalance(val uint8) error {
 }
 
 func (s *Synth) SetPortamentoAmount(val uint8) error {
-	err := s.setValue(5, utils.Map99(val))
+	err := s.setValue(5, mapToMidi(int(val), 99))
 	if err != nil {
 		return err
 	}
@@ -141,7 +140,7 @@ func (s *Synth) SetPortamentoAmount(val uint8) error {
 }
 
 func (s *Synth) SetRingModAmount(val uint8) error {
-	err := s.setValue(95, utils.Map99(val))
+	err := s.setValue(95, mapToMidi(int(val), 99))
 	if err != nil {
 		return err
 	}
@@ -149,13 +148,13 @@ func (s *Synth) SetRingModAmount(val uint8) error {
 	return nil
 }
 
-func (s *Synth) SetRingModEnabled(val bool) error {
-	midiVal := utils.MapBool(val)
+func (s *Synth) SetRingModEnabled(val uint8) error {
+	midiVal := mapToMidi(int(val), 1)
 	err := s.setValue(96, midiVal)
 	if err != nil {
 		return err
 	}
-	s.LivePatch.RingModEnabled = val
+	s.LivePatch.RingModEnabled = val != 0
 	return nil
 }
 

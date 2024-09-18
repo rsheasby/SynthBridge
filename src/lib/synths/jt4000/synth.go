@@ -4,14 +4,29 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"gitlab.com/gomidi/midi/v2"
 	"gitlab.com/gomidi/midi/v2/drivers"
 )
 
+type Synth struct {
+	sync.WaitGroup
+	inPort          drivers.In
+	inStop          func()
+	outPort         drivers.Out
+	MidiChannel     uint8
+	Patches         []Patch
+	CurrentPatch    Patch
+	LivePatch       Patch
+	SelectionParams []SelectionParam
+	IntParams       []IntParam
+}
+
 func NewSynth(inPort drivers.In, outPort drivers.Out) (s *Synth) {
 	s = &Synth{inPort: inPort, outPort: outPort}
+	s.initParams()
 	s.openPorts()
 	s.GetCurrentPatch()
 	s.LivePatch = s.CurrentPatch
