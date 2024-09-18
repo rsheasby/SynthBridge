@@ -67,6 +67,15 @@ func (ip *IntParam) Name() string {
 	return ip.StaticName
 }
 
+func (ip *IntParam) SetValue(value int) error {
+	if value < ip.MinValue || value > ip.MaxValue {
+		return errors.New("value out of range")
+	}
+	ip.synth.setValue(uint8(ip.CC), mapToMidi(value, ip.MaxValue))
+	ip.CurrentValue = value
+	return nil
+}
+
 func (s *Synth) initParams() {
 	s.SelectionParams = map[string]SelectionParam{
 		"osc1Wave": {

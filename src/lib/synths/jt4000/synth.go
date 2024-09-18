@@ -13,26 +13,30 @@ import (
 
 type Synth struct {
 	sync.WaitGroup
-	inPort          drivers.In
-	inStop          func()
-	outPort         drivers.Out
-	MidiChannel     uint8
-	Patches         []Patch
-	CurrentPatch    Patch
-	LivePatch       Patch
-	SelectionParams map[string]SelectionParam
-	IntParams       map[string]IntParam
+	inPort           drivers.In
+	inStop           func()
+	outPort          drivers.Out
+	MidiChannel      uint8
+	PatchNames       []string
+	CurrentPatch     int
+	CurrentPatchName string
+	SelectionParams  map[string]SelectionParam
+	IntParams        map[string]IntParam
 }
 
 func NewSynth(inPort drivers.In, outPort drivers.Out) (s *Synth) {
-	s = &Synth{inPort: inPort, outPort: outPort}
+	s = &Synth{inPort: inPort, outPort: outPort, PatchNames: []string{""}, CurrentPatch: 0}
 	s.initParams()
 	s.openPorts()
-	s.GetCurrentPatch()
-	s.LivePatch = s.CurrentPatch
+	s.GetAllPatchNames()
 	time.Sleep(10 * time.Millisecond)
-	s.GetAllPatches()
+	s.GetCurrentPatchDetails()
 	return
+}
+
+func (s *Synth) setValue(cc, val uint8) error {
+	msg := midi.ControlChange(s.MidiChannel, cc, val)
+	return s.outPort.Send(msg)
 }
 
 func (s *Synth) openInPort() (err error) {

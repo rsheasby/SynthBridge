@@ -13,83 +13,57 @@ func (s *Synth) parseIncomingSysex(data []byte) (err error) {
 	}
 	if bytes.HasPrefix(data, []byte{0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x15}) {
 		log.Println("Received current patch")
-		patch, err := parsePatch(data[7:71])
+		err := s.parseCurrentPatchData(data[7:71])
 		if err != nil {
 			return err
 		}
-		s.CurrentPatch = patch
 	} else if bytes.HasPrefix(data, []byte{0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x10}) {
-		log.Println("Received all patches")
-		patches := []Patch{}
+		log.Println("Received all patch names")
+		patchNames := []string{}
 		for i := 7; i+64 <= len(data); i += 64 {
-			patch, err := parsePatch(data[i : i+64])
+			patchName, err := parsePatchName(data[i : i+64])
 			if err != nil {
 				return err
 			}
-			patches = append(patches, patch)
+			patchNames = append(patchNames, patchName)
 		}
-		s.Patches = patches
+		s.PatchNames = patchNames
 	}
 
 	return
 }
 
-func parsePatch(data []byte) (patch Patch, err error) {
-	if len(data) != 64 {
-		return patch, errors.New("patch data length is not 64")
+func (s *Synth) parseCurrentPatchData(patchData []byte) error {
+	if len(patchData) != 64 {
+		return errors.New("patch data length is not 64")
 	}
-	patch.Name = string(data[55:64])
-	patch.Osc1Wave = OscWave(data[0])
-	patch.Osc1Adj = data[2]
-	patch.Osc1Coarse = data[4]
-	patch.Osc1Fine = data[5]
-
-	patch.Osc2Wave = OscWave(data[1])
-	if patch.Osc2Wave == OscWaveSuperSaw {
-		patch.Osc2Wave = OscWaveNoise
+	s.CurrentPatchName = string(patchData[55:64])
+	for id, param := range s.SelectionParams {
+		param.StoredValueIndex = int(patchData[param.bytePosition])
+		param.StoredValue = param.PossibleValues[param.StoredValueIndex]
+		param.CurrentValueIndex = param.StoredValueIndex
+		param.CurrentValue = param.StoredValue
+		s.SelectionParams[id] = param
 	}
-	patch.Osc2Adj = data[3]
-	patch.Osc2Coarse = data[6]
-	patch.Osc2Fine = data[7]
-
-	patch.OscBalance = data[8] - 0x40
-
-	patch.PortamentoAmount = data[46]
-	patch.PortamentoMode = PortamentoMode(data[45])
-
-	patch.RingModEnabled = data[43] == 0x01
-	patch.RingModAmount = data[44]
-
-	patch.LFO1Wave = LFOWave(data[47])
-	patch.LFO1Destination = LFODestination(data[53])
-	patch.LFO1Speed = data[49]
-	patch.LFO1Amount = data[50]
-
-	patch.LFO2Wave = LFOWave(data[48])
-	patch.LFO2Speed = data[51]
-	patch.LFO2Amount = data[52]
-
-	patch.VCFAttack = data[14]
-	patch.VCFDecay = data[15]
-	patch.VCFSustain = data[16]
-	patch.VCFRelease = data[17]
-	patch.VCFAmount = data[22]
-
-	patch.VCFCutoff = data[12]
-	patch.VCFResonance = data[13]
-
-	patch.VCAAttack = data[18]
-	patch.VCADecay = data[19]
-	patch.VCASustain = data[20]
-	patch.VCARelease = data[21]
-
-	return
+	for id, param := range s.IntParams {
+		param.StoredValue = int(patchData[param.bytePosition])
+		param.CurrentValue = param.StoredValue
+		s.IntParams[id] = param
+	}
+	return nil
 }
 
-func (s *Synth) GetAllPatches() (err error) {
+func parsePatchName(patchData []byte) (patchName string, err error) {
+	if len(patchData) != 64 {
+		return patchName, errors.New("patch data length is not 64")
+	}
+	return string(patchData[55:64]), nil
+}
+
+func (s *Synth) GetAllPatchNames() (err error) {
 	s.Wait()
 	s.Add(1)
-	log.Println("Requesting all patches")
+	log.Println("Requesting all patch names")
 	allPatchesCmd := []byte{0xF0, 0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x00, 0x20, 0xF7}
 
 	s.outPort.Send(allPatchesCmd)
@@ -97,10 +71,10 @@ func (s *Synth) GetAllPatches() (err error) {
 	return
 }
 
-func (s *Synth) GetCurrentPatch() (err error) {
+func (s *Synth) GetCurrentPatchDetails() (err error) {
 	s.Wait()
 	s.Add(1)
-	log.Println("Requesting current patch")
+	log.Println("Requesting current patch details")
 	getCurrentPatchCmd := []byte{0xF0, 0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x00, 0x00, 0xF7}
 
 	s.outPort.Send(getCurrentPatchCmd)
