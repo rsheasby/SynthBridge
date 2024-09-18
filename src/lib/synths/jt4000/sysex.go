@@ -77,6 +77,7 @@ func parsePatch(data []byte) (patch Patch, err error) {
 
 	patch.VCFCutoff = data[12]
 	patch.VCFResonance = data[13]
+
 	patch.VCAAttack = data[18]
 	patch.VCADecay = data[19]
 	patch.VCASustain = data[20]

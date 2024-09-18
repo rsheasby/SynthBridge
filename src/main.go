@@ -15,8 +15,8 @@ func main() {
 	synth := jt4000.NewSynth(inPorts[0], outPorts[0])
 
 	var val string
-	var param = synth.SelectionParams[3]
-	fmt.Printf("Updating Param: %s\n", param.Name)
+	var param = synth.SelectionParams["lfo1Speed"]
+	fmt.Printf("Updating Param: %s\n", param.Name())
 	for {
 		fmt.Print("Enter value: ")
 		fmt.Scanf("%s", &val)

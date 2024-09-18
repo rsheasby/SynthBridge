@@ -20,8 +20,8 @@ type Synth struct {
 	Patches         []Patch
 	CurrentPatch    Patch
 	LivePatch       Patch
-	SelectionParams []SelectionParam
-	IntParams       []IntParam
+	SelectionParams map[string]SelectionParam
+	IntParams       map[string]IntParam
 }
 
 func NewSynth(inPort drivers.In, outPort drivers.Out) (s *Synth) {
