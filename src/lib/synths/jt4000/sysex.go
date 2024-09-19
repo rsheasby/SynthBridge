@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -59,7 +60,7 @@ func parsePatchName(patchData []byte) (patchName string, err error) {
 	if len(patchData) != 64 {
 		return patchName, errors.New("patch data length is not 64")
 	}
-	return string(patchData[55:64]), nil
+	return strings.TrimSpace(string(patchData[55:64])), nil
 }
 
 func (s *Synth) GetAllPatchNames() (err error) {
