@@ -14,7 +14,7 @@ func main() {
 		panic(err)
 	}
 
-	controller.SetPadColor(1, 127, 100, 0)
+	controller.DisplayText("Hello World", minilab3.PictogramHeart, "Goodbye World", minilab3.PictogramPlay)
 }
 
 func getPortsByName(inPortName string, outPortName string) (inPort drivers.In, outPort drivers.Out) {

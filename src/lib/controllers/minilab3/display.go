@@ -1,6 +1,9 @@
 package minilab3
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 func (c *Controller) initDisplay() error {
 	sysexMessage := []byte{0xF0, 0x00, 0x20, 0x6B, 0x7F, 0x42, 0x02, 0x02, 0x40, 0x6A, 0x21, 0xF7}
@@ -18,7 +21,7 @@ func (c *Controller) SetPadColor(pad uint8, r, g, b uint8) error {
 	return c.outPort.Send(sysexMessage)
 }
 
-type Pictogram uint8
+type Pictogram byte
 
 const (
 	PictogramNone   Pictogram = 0x00
@@ -28,3 +31,24 @@ const (
 	PictogramNote   Pictogram = 0x04
 	PictogramTick   Pictogram = 0x05
 )
+
+func (c *Controller) DisplayText(topText string, topPictogram Pictogram, bottomText string, bottomPictogram Pictogram) error {
+	var buffer bytes.Buffer
+
+	buffer.Write([]byte{0xF0, 0x00, 0x20, 0x6B, 0x7F, 0x42, 0x04, 0x02, 0x60, 0x1F, 0x07, 0x01})
+	buffer.WriteByte(byte(topPictogram))
+	buffer.WriteByte(byte(bottomPictogram))
+	buffer.Write([]byte{0x01, 0x00, 0x01})
+
+	buffer.Write([]byte(topText))
+	buffer.WriteByte(0x00)
+
+	buffer.WriteByte(0x02)
+
+	buffer.Write([]byte(bottomText))
+	buffer.WriteByte(0x00)
+
+	buffer.WriteByte(0xF7)
+
+	return c.outPort.Send(buffer.Bytes())
+}
