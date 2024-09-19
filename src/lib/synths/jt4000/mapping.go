@@ -9,7 +9,6 @@ func mapToMidi(val int, max int) uint8 {
 	if max == 63 {
 		return map63(val)
 	}
-	// val += 1
 	return uint8(math.Ceil(float64(val) * 127.0 / float64(max)))
 }
 

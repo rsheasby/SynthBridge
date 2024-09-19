@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"log"
+	"time"
 )
 
 func (s *Synth) parseIncomingSysex(data []byte) (err error) {
-	defer s.Done()
+	defer s.wg.Done()
 	if len(data) < 64 {
 		return errors.New("sysex message is too short")
 	}
@@ -29,6 +30,7 @@ func (s *Synth) parseIncomingSysex(data []byte) (err error) {
 		}
 		s.PatchNames = patchNames
 	}
+	time.Sleep(10 * time.Millisecond)
 
 	return
 }
@@ -61,23 +63,23 @@ func parsePatchName(patchData []byte) (patchName string, err error) {
 }
 
 func (s *Synth) GetAllPatchNames() (err error) {
-	s.Wait()
-	s.Add(1)
+	s.wg.Wait()
+	s.wg.Add(1)
 	log.Println("Requesting all patch names")
 	allPatchesCmd := []byte{0xF0, 0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x00, 0x20, 0xF7}
 
 	s.outPort.Send(allPatchesCmd)
-	s.Wait()
+	s.wg.Wait()
 	return
 }
 
 func (s *Synth) GetCurrentPatchDetails() (err error) {
-	s.Wait()
-	s.Add(1)
+	s.wg.Wait()
+	s.wg.Add(1)
 	log.Println("Requesting current patch details")
 	getCurrentPatchCmd := []byte{0xF0, 0x00, 0x20, 0x32, 0x00, 0x01, 0x38, 0x00, 0x00, 0xF7}
 
 	s.outPort.Send(getCurrentPatchCmd)
-	s.Wait()
+	s.wg.Wait()
 	return
 }

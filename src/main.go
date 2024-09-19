@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/rsheasby/SynthBridge/lib/synths/jt4000"
 	"gitlab.com/gomidi/midi/v2"
 	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
@@ -14,18 +13,18 @@ func main() {
 	outPorts := midi.GetOutPorts()
 
 	synth := jt4000.NewSynth(inPorts[0], outPorts[0])
-	spew.Dump(synth)
+	// spew.Dump(synth)
 
-	var val string
-	var param = synth.SelectionParams["lfo1Speed"]
-	fmt.Printf("Updating Param: %s\n", param.Name())
+	var val int
+	fmt.Println("Updating Patch number")
 	for {
 		fmt.Print("Enter value: ")
-		fmt.Scanf("%s", &val)
+		fmt.Scanf("%d", &val)
 
-		err := param.SetValue(val)
+		err := synth.SetCurrentPatch(val)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 		}
+		fmt.Printf("Current patch number: %d\nCurrent patch index: %d\nCurrent patch name: %s\n", synth.CurrentPatchNumber(), synth.CurrentPatchIndex, synth.CurrentPatchName)
 	}
 }

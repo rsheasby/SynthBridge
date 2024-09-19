@@ -5,33 +5,51 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"gitlab.com/gomidi/midi/v2"
 	"gitlab.com/gomidi/midi/v2/drivers"
 )
 
 type Synth struct {
-	sync.WaitGroup
-	inPort           drivers.In
-	inStop           func()
-	outPort          drivers.Out
-	MidiChannel      uint8
-	PatchNames       []string
-	CurrentPatch     int
-	CurrentPatchName string
-	SelectionParams  map[string]SelectionParam
-	IntParams        map[string]IntParam
+	wg                sync.WaitGroup
+	inPort            drivers.In
+	inStop            func()
+	outPort           drivers.Out
+	CurrentPatchIndex int
+	CurrentPatchName  string
+
+	MidiChannel     uint8
+	PatchNames      []string
+	SelectionParams map[string]SelectionParam
+	IntParams       map[string]IntParam
 }
 
 func NewSynth(inPort drivers.In, outPort drivers.Out) (s *Synth) {
-	s = &Synth{inPort: inPort, outPort: outPort, PatchNames: []string{""}, CurrentPatch: 0}
+	s = &Synth{inPort: inPort, outPort: outPort, PatchNames: []string{""}, CurrentPatchIndex: 0}
 	s.initParams()
 	s.openPorts()
 	s.GetAllPatchNames()
-	time.Sleep(10 * time.Millisecond)
 	s.GetCurrentPatchDetails()
 	return
+}
+
+func (s *Synth) SetCurrentPatch(patch int) error {
+	if patch < 0 || patch >= len(s.PatchNames) {
+		return errors.New("patch out of range")
+	}
+	programChangeMsg := midi.ProgramChange(s.MidiChannel, uint8(patch))
+	err := s.outPort.Send(programChangeMsg)
+	if err != nil {
+		return err
+	}
+	s.GetCurrentPatchDetails()
+	s.CurrentPatchIndex = patch
+	s.PatchNames[patch] = s.CurrentPatchName
+	return nil
+}
+
+func (s *Synth) CurrentPatchNumber() (patchNumber int) {
+	return s.CurrentPatchIndex + 1
 }
 
 func (s *Synth) setValue(cc, val uint8) error {
