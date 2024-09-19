@@ -17,3 +17,14 @@ func (c *Controller) SetPadColor(pad uint8, r, g, b uint8) error {
 	sysexMessage := []byte{0xF0, 0x00, 0x20, 0x6B, 0x7F, 0x42, 0x02, 0x02, 0x16, padId, r, g, b, 0xF7}
 	return c.outPort.Send(sysexMessage)
 }
+
+type Pictogram uint8
+
+const (
+	PictogramNone   Pictogram = 0x00
+	PictogramHeart  Pictogram = 0x01
+	PictogramPlay   Pictogram = 0x02
+	PictogramCircle Pictogram = 0x03
+	PictogramNote   Pictogram = 0x04
+	PictogramTick   Pictogram = 0x05
+)
