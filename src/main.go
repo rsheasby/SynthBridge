@@ -14,7 +14,7 @@ func main() {
 		panic(err)
 	}
 
-	controller.DisplayKnob("Title", "value", 63, true)
+	controller.DisplayPad("Title", "value", 63, true)
 }
 
 func getPortsByName(inPortName string, outPortName string) (inPort drivers.In, outPort drivers.Out) {
