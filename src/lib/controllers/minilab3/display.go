@@ -40,14 +40,31 @@ func (c *Controller) DisplayText(topText string, topPictogram Pictogram, bottomT
 	buffer.WriteByte(byte(bottomPictogram))
 	buffer.Write([]byte{0x01, 0x00, 0x01})
 
-	buffer.Write([]byte(topText))
-	buffer.WriteByte(0x00)
+	buffer.WriteString(topText)
+	buffer.Write([]byte{0x00, 0x02})
 
-	buffer.WriteByte(0x02)
+	buffer.WriteString(bottomText)
+	buffer.Write([]byte{0x00, 0x02, 0xF7})
 
-	buffer.Write([]byte(bottomText))
-	buffer.WriteByte(0x00)
+	return c.outPort.Send(buffer.Bytes())
+}
 
+func (c *Controller) DisplayKnob(topText, bottomText string, knobPosition uint8, autoHide bool) error {
+	if knobPosition > 127 {
+		return fmt.Errorf("knob position must be between 0 and 127")
+	}
+
+	var buffer bytes.Buffer
+
+	autoHideByte := byte(0x00)
+	if autoHide {
+		autoHideByte = byte(0x02)
+	}
+
+	buffer.Write([]byte{0xF0, 0x00, 0x20, 0x6B, 0x7F, 0x42, 0x04, 0x02, 0x60, 0x1F, 0x03, autoHideByte, knobPosition, 0x00, 0x00, 0x01})
+	buffer.WriteString(topText)
+	buffer.Write([]byte{0x00, 0x02})
+	buffer.WriteString(bottomText)
 	buffer.WriteByte(0xF7)
 
 	return c.outPort.Send(buffer.Bytes())

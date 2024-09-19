@@ -14,7 +14,7 @@ func main() {
 		panic(err)
 	}
 
-	controller.DisplayText("Hello World", minilab3.PictogramHeart, "Goodbye World", minilab3.PictogramPlay)
+	controller.DisplayKnob("Title", "value", 63, true)
 }
 
 func getPortsByName(inPortName string, outPortName string) (inPort drivers.In, outPort drivers.Out) {
