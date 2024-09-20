@@ -11,10 +11,11 @@ const midiInPortName = "Minilab3 MIDI"
 const midiOutPortName = "Minilab3 MIDI"
 
 type Controller struct {
-	midiInPort  drivers.In
-	midiInStop  func()
-	midiOutPort drivers.Out
-	NoteEvents  chan NoteEvent
+	midiInPort      drivers.In
+	midiInStop      func()
+	midiOutPort     drivers.Out
+	NoteEvents      chan NoteEvent
+	SelectionEvents chan SelectionEvent
 }
 
 func NewController() (controller *Controller, err error) {

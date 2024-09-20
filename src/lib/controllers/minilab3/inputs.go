@@ -29,12 +29,12 @@ func (c *Controller) SetKnobValue(knob uint8, value uint8) error {
 func (c *Controller) midiMsgListen() (err error) {
 	c.midiInStop, err = midi.ListenTo(c.midiInPort, func(msg midi.Message, timestampms int32) {
 		var bt []byte
-		var ch, key, vel uint8
+		var ch, key, vel, cc, val uint8
 		switch {
 		case msg.GetSysEx(&bt):
 			log.Println("received sysex")
-		case msg.GetControlChange(&ch, &key, &vel):
-			// c.handleControlChange(ch, key, vel)
+		case msg.GetControlChange(&ch, &cc, &val):
+			c.handleControlChange(ch, cc, val)
 		case msg.GetNoteStart(&ch, &key, &vel):
 			c.handleNoteStart(ch, key, vel)
 		case msg.GetNoteEnd(&ch, &key):
@@ -70,4 +70,37 @@ func (c *Controller) handleNoteStart(ch, key, vel uint8) {
 
 func (c *Controller) handleNoteEnd(ch, key uint8) {
 	c.NoteEvents <- NoteEvent{Type: NoteEnd, Channel: ch, Key: key}
+}
+
+type SelectionEventType uint8
+
+const (
+	SelectionLeft SelectionEventType = iota
+	SelectionRight
+	SelectionClickDown
+	SelectionClickUp
+)
+
+type SelectionEvent struct {
+	Type    SelectionEventType
+	Channel uint8
+}
+
+const selectorKnobCC = 28
+const selectorButtonCC = 118
+
+func (c *Controller) handleControlChange(ch, cc, val uint8) {
+	if cc == selectorKnobCC {
+		if val < 63 {
+			c.SelectionEvents <- SelectionEvent{Type: SelectionLeft, Channel: ch}
+		} else if val > 63 {
+			c.SelectionEvents <- SelectionEvent{Type: SelectionRight, Channel: ch}
+		}
+	} else if cc == selectorButtonCC {
+		if val > 0 {
+			c.SelectionEvents <- SelectionEvent{Type: SelectionClickDown, Channel: ch}
+		} else {
+			c.SelectionEvents <- SelectionEvent{Type: SelectionClickUp, Channel: ch}
+		}
+	}
 }

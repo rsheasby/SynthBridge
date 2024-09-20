@@ -11,5 +11,5 @@ func main() {
 		panic(err)
 	}
 
-	controller.DisplaySelector("Select Patch", "11 - Soft", 11, 31)
+	controller.DisplaySelector("Select Patch", "11 - Soft", 5, 31)
 }
