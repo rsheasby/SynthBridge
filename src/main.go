@@ -11,5 +11,5 @@ func main() {
 		panic(err)
 	}
 
-	controller.DisplayText("Hello", minilab3.PictogramTick, "World", minilab3.PictogramHeart)
+	controller.DisplaySelector("Select Patch", "11 - Soft", 11, 31)
 }

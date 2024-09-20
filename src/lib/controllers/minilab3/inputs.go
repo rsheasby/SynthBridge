@@ -1,6 +1,11 @@
 package minilab3
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+
+	"gitlab.com/gomidi/midi/v2"
+)
 
 func (c *Controller) SetKnobValue(knob uint8, value uint8) error {
 
@@ -19,4 +24,50 @@ func (c *Controller) SetKnobValue(knob uint8, value uint8) error {
 		return fmt.Errorf("failed to send sysex message: %v", err)
 	}
 	return nil
+}
+
+func (c *Controller) midiMsgListen() (err error) {
+	c.midiInStop, err = midi.ListenTo(c.midiInPort, func(msg midi.Message, timestampms int32) {
+		var bt []byte
+		var ch, key, vel uint8
+		switch {
+		case msg.GetSysEx(&bt):
+			log.Println("received sysex")
+		case msg.GetControlChange(&ch, &key, &vel):
+			// c.handleControlChange(ch, key, vel)
+		case msg.GetNoteStart(&ch, &key, &vel):
+			c.handleNoteStart(ch, key, vel)
+		case msg.GetNoteEnd(&ch, &key):
+			c.handleNoteEnd(ch, key)
+		default:
+			// ignore
+		}
+	}, midi.UseSysEx(), midi.SysExBufferSize(4096))
+
+	if err != nil {
+		return fmt.Errorf("failed to listen to MIDI input port: %v", err)
+	}
+	return
+}
+
+type NoteEventType uint8
+
+const (
+	NoteStart NoteEventType = iota
+	NoteEnd
+)
+
+type NoteEvent struct {
+	Type     NoteEventType
+	Channel  uint8
+	Key      uint8
+	Velocity uint8
+}
+
+func (c *Controller) handleNoteStart(ch, key, vel uint8) {
+	c.NoteEvents <- NoteEvent{Type: NoteStart, Channel: ch, Key: key, Velocity: vel}
+}
+
+func (c *Controller) handleNoteEnd(ch, key uint8) {
+	c.NoteEvents <- NoteEvent{Type: NoteEnd, Channel: ch, Key: key}
 }

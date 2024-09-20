@@ -38,6 +38,31 @@ func (c *Controller) DisplayText(topText string, topPictogram Pictogram, bottomT
 	return c.midiOutPort.Send(buffer.Bytes())
 }
 
+func (c *Controller) DisplaySelector(topText string, bottomText string, position int, maxPosition int) error {
+	var buffer bytes.Buffer
+	var positionByte uint8
+
+	if position > maxPosition {
+		return fmt.Errorf("position must be less than maxPosition")
+	}
+
+	if position == maxPosition {
+		positionByte = 0x7E
+	} else if position == 0 {
+		positionByte = 0x00
+	} else {
+		positionByte = uint8(0x08 + (float64(position) / float64(maxPosition) * (0x77 - 0x08)))
+	}
+
+	buffer.Write([]byte{0xF0, 0x00, 0x20, 0x6B, 0x7F, 0x42, 0x04, 0x02, 0x60, 0x1F, 0x06, 0x00, positionByte, 0x00, 0x7F, 0x00, 0x00, 0x01})
+	buffer.WriteString(topText)
+	buffer.Write([]byte{0x00, 0x02})
+	buffer.WriteString(bottomText)
+	buffer.Write([]byte{0x00, 0xF7})
+
+	return c.midiOutPort.Send(buffer.Bytes())
+}
+
 func (c *Controller) DisplayKnob(topText, bottomText string, knobPosition uint8, autoHide bool) error {
 	if knobPosition > 127 {
 		return fmt.Errorf("knob position must be between 0 and 127")
