@@ -1,7 +1,6 @@
 package minilab3
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
@@ -9,15 +8,18 @@ import (
 	"gitlab.com/gomidi/midi/v2/drivers"
 )
 
+const midiInPortName = "Minilab3 MIDI"
+const midiOutPortName = "Minilab3 MIDI"
+
 type Controller struct {
-	inPort  drivers.In
-	inStop  func()
-	outPort drivers.Out
+	midiInPort  drivers.In
+	midiInStop  func()
+	midiOutPort drivers.Out
 }
 
-func NewController(inPort drivers.In, outPort drivers.Out) (controller *Controller, err error) {
-	controller = &Controller{inPort: inPort, outPort: outPort}
-	err = controller.openPorts()
+func NewController() (controller *Controller, err error) {
+	controller = &Controller{}
+	err = controller.connectToMidiPorts()
 	if err != nil {
 		return nil, err
 	}
@@ -26,27 +28,52 @@ func NewController(inPort drivers.In, outPort drivers.Out) (controller *Controll
 	if err != nil {
 		return nil, err
 	}
-	return
-}
 
-func (c *Controller) openInPort() (err error) {
-	if c.inPort == nil {
-		return errors.New("no input port")
-	}
-	if c.inPort.IsOpen() {
-		return nil
-	}
-	err = c.inPort.Open()
+	err = controller.midiMsgListen()
 	if err != nil {
-		return
+		return nil, err
 	}
-	c.inMsgListen()
+
 	return
 }
 
-func (c *Controller) inMsgListen() {
-	var err error
-	c.inStop, err = midi.ListenTo(c.inPort, func(msg midi.Message, timestampms int32) {
+func (c *Controller) connectToMidiPorts() (err error) {
+	inPorts := midi.GetInPorts()
+	outPorts := midi.GetOutPorts()
+
+	for _, port := range inPorts {
+		if port.String() == midiInPortName {
+			c.midiInPort = port
+			break
+		}
+	}
+	if c.midiInPort == nil {
+		return fmt.Errorf(`couldn't find input port "%s"`, midiInPortName)
+	}
+	err = c.midiInPort.Open()
+	if err != nil {
+		return fmt.Errorf("failed to open MIDI input port: %v", err)
+	}
+
+	for _, port := range outPorts {
+		if port.String() == midiOutPortName {
+			c.midiOutPort = port
+			break
+		}
+	}
+	if c.midiOutPort == nil {
+		return fmt.Errorf(`couldn't find output port "%s"`, midiOutPortName)
+	}
+	err = c.midiOutPort.Open()
+	if err != nil {
+		return fmt.Errorf("failed to open MIDI output port: %v", err)
+	}
+
+	return
+}
+
+func (c *Controller) midiMsgListen() (err error) {
+	c.midiInStop, err = midi.ListenTo(c.midiInPort, func(msg midi.Message, timestampms int32) {
 		var bt []byte
 		var ch, key, vel uint8
 		switch {
@@ -62,24 +89,7 @@ func (c *Controller) inMsgListen() {
 	}, midi.UseSysEx(), midi.SysExBufferSize(4096))
 
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
-		return
+		return fmt.Errorf("failed to listen to MIDI input port: %v", err)
 	}
-}
-
-func (c *Controller) openOutPort() (err error) {
-	if c.outPort == nil {
-		return errors.New("no output port")
-	}
-	if c.outPort.IsOpen() {
-		return nil
-	}
-	return c.outPort.Open()
-}
-
-func (c *Controller) openPorts() (err error) {
-	if err = c.openInPort(); err != nil {
-		return
-	}
-	return c.openOutPort()
+	return
 }
