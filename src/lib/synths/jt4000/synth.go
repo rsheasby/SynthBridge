@@ -24,12 +24,57 @@ type Synth struct {
 	IntParams       map[string]IntParam
 }
 
-func NewSynth(inPort drivers.In, outPort drivers.Out) (s *Synth) {
-	s = &Synth{inPort: inPort, outPort: outPort, PatchNames: []string{""}, CurrentPatchIndex: 0}
+func NewSynth() (s *Synth, err error) {
+	s = &Synth{PatchNames: []string{""}, CurrentPatchIndex: 0}
+	err = s.connectToMidiPorts()
+	if err != nil {
+		return nil, err
+	}
 	s.initParams()
-	s.openPorts()
 	s.GetAllPatchNames()
 	s.GetCurrentPatchDetails()
+	return
+}
+
+const (
+	midiInPortName  = "JT-4000 MICRO"
+	midiOutPortName = "JT-4000 MICRO"
+)
+
+func (s *Synth) connectToMidiPorts() (err error) {
+	inPorts := midi.GetInPorts()
+	outPorts := midi.GetOutPorts()
+
+	for _, port := range inPorts {
+		if port.String() == midiInPortName {
+			s.inPort = port
+			break
+		}
+	}
+	if s.inPort == nil {
+		return fmt.Errorf(`couldn't find input port "%s"`, midiInPortName)
+	}
+	err = s.inPort.Open()
+	if err != nil {
+		return fmt.Errorf("failed to open MIDI input port: %v", err)
+	}
+
+	for _, port := range outPorts {
+		if port.String() == midiOutPortName {
+			s.outPort = port
+			break
+		}
+	}
+	if s.outPort == nil {
+		return fmt.Errorf(`couldn't find output port "%s"`, midiOutPortName)
+	}
+	err = s.outPort.Open()
+	if err != nil {
+		return fmt.Errorf("failed to open MIDI output port: %v", err)
+	}
+
+	s.inMsgListen()
+
 	return
 }
 
@@ -57,21 +102,6 @@ func (s *Synth) setValue(cc, val uint8) error {
 	return s.outPort.Send(msg)
 }
 
-func (s *Synth) openInPort() (err error) {
-	if s.inPort == nil {
-		return errors.New("no input port")
-	}
-	if s.inPort.IsOpen() {
-		return nil
-	}
-	err = s.inPort.Open()
-	if err != nil {
-		return
-	}
-	s.inMsgListen()
-	return
-}
-
 func (s *Synth) inMsgListen() {
 	var err error
 	s.inStop, err = midi.ListenTo(s.inPort, func(msg midi.Message, timestampms int32) {
@@ -94,21 +124,4 @@ func (s *Synth) inMsgListen() {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
-}
-
-func (s *Synth) openOutPort() (err error) {
-	if s.outPort == nil {
-		return errors.New("no output port")
-	}
-	if s.outPort.IsOpen() {
-		return nil
-	}
-	return s.outPort.Open()
-}
-
-func (s *Synth) openPorts() (err error) {
-	if err = s.openInPort(); err != nil {
-		return
-	}
-	return s.openOutPort()
 }
