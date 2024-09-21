@@ -3,7 +3,6 @@ package jt4000
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"gitlab.com/gomidi/midi/v2"
@@ -33,7 +32,18 @@ func NewSynth() (s *Synth, err error) {
 	s.initParams()
 	s.GetAllPatchNames()
 	s.GetCurrentPatchDetails()
+	s.guessPatchIndex()
 	return
+}
+
+func (s *Synth) SendNoteOn(note uint8, velocity uint8) (err error) {
+	msg := midi.NoteOn(s.MidiChannel, note, velocity)
+	return s.outPort.Send(msg)
+}
+
+func (s *Synth) SendNoteOff(note uint8) (err error) {
+	msg := midi.NoteOff(s.MidiChannel, note)
+	return s.outPort.Send(msg)
 }
 
 const (
@@ -106,15 +116,9 @@ func (s *Synth) inMsgListen() {
 	var err error
 	s.inStop, err = midi.ListenTo(s.inPort, func(msg midi.Message, timestampms int32) {
 		var bt []byte
-		var ch, key, vel uint8
 		switch {
 		case msg.GetSysEx(&bt):
-			log.Println("received sysex")
 			s.parseIncomingSysex(bt)
-		case msg.GetNoteStart(&ch, &key, &vel):
-			fmt.Printf("starting note %s on channel %v with velocity %v\n", midi.Note(key), ch, vel)
-		case msg.GetNoteEnd(&ch, &key):
-			fmt.Printf("ending note %s on channel %v\n", midi.Note(key), ch)
 		default:
 			// ignore
 		}

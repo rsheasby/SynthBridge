@@ -40,7 +40,7 @@ func (s *Synth) parseCurrentPatchData(patchData []byte) error {
 	if len(patchData) != 64 {
 		return errors.New("patch data length is not 64")
 	}
-	s.CurrentPatchName = string(patchData[55:64])
+	s.CurrentPatchName = strings.TrimSpace(string(patchData[55:64]))
 	for id, param := range s.SelectionParams {
 		param.StoredValueIndex = int(patchData[param.bytePosition])
 		param.StoredValue = param.PossibleValues[param.StoredValueIndex]
@@ -83,4 +83,13 @@ func (s *Synth) GetCurrentPatchDetails() (err error) {
 	s.outPort.Send(getCurrentPatchCmd)
 	s.wg.Wait()
 	return
+}
+
+func (s *Synth) guessPatchIndex() {
+	for i, name := range s.PatchNames {
+		if name == s.CurrentPatchName {
+			s.CurrentPatchIndex = i
+			return
+		}
+	}
 }

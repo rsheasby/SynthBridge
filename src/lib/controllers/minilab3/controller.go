@@ -19,7 +19,10 @@ type Controller struct {
 }
 
 func NewController() (controller *Controller, err error) {
-	controller = &Controller{}
+	controller = &Controller{
+		NoteEvents:      make(chan NoteEvent, 1),
+		SelectionEvents: make(chan SelectionEvent, 1),
+	}
 	err = controller.connectToMidiPorts()
 	if err != nil {
 		return nil, err
