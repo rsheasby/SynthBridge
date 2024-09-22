@@ -1,6 +1,8 @@
 package jt4000
 
-import "errors"
+import (
+	"errors"
+)
 
 type SelectionParam struct {
 	synth *Synth
@@ -77,7 +79,7 @@ func (ip *IntParam) SetValue(value int) error {
 }
 
 func (s *Synth) initParams() {
-	s.SelectionParams = map[string]SelectionParam{
+	s.SelectionParams = map[string]*SelectionParam{
 		"osc1Wave": {
 			synth:          s,
 			StaticName:     "Osc 1 Wave",
@@ -128,7 +130,7 @@ func (s *Synth) initParams() {
 			bytePosition:   48,
 		},
 	}
-	s.IntParams = map[string]IntParam{
+	s.IntParams = map[string]*IntParam{
 		"osc1Adjustment": {
 			synth:      s,
 			StaticName: "Osc 1 PWM/Detune/Feedback",

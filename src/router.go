@@ -141,11 +141,11 @@ func (r *Router) routeControls() {
 		paramName := controlMap[controlIndex]
 		param, isSelectionParam := r.synth.SelectionParams[paramName]
 		if isSelectionParam {
-			selectionParam = &param
+			selectionParam = param
 		} else {
 			param, isIntParam := r.synth.IntParams[paramName]
 			if isIntParam {
-				intParam = &param
+				intParam = param
 			}
 		}
 

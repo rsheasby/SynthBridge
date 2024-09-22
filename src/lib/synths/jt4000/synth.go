@@ -19,8 +19,8 @@ type Synth struct {
 
 	MidiChannel     uint8
 	PatchNames      []string
-	SelectionParams map[string]SelectionParam
-	IntParams       map[string]IntParam
+	SelectionParams map[string]*SelectionParam
+	IntParams       map[string]*IntParam
 }
 
 func NewSynth() (s *Synth, err error) {
