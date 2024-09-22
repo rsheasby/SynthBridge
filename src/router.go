@@ -126,3 +126,25 @@ func (r *Router) KnobIntParamController(paramId string) KnobEventHandler {
 		r.ResetIdleTimer()
 	}
 }
+
+func (r *Router) KnobSelectionParamController(paramId string) KnobEventHandler {
+	param := r.synth.SelectionParams[paramId]
+	if param == nil {
+		log.Fatalf("No such param %s", paramId)
+	}
+
+	return func(knobEvent minilab3.KnobEvent) {
+		newValueIndex := param.CurrentValueIndex + int(knobEvent.RelativeValue)
+		if newValueIndex < 0 {
+			newValueIndex = 0
+		} else if newValueIndex >= len(param.PossibleValues) {
+			newValueIndex = len(param.PossibleValues) - 1
+		}
+		err := param.SetValueByIndex(newValueIndex)
+		if err != nil {
+			log.Printf("Failed to set param %s to index %d: %v", paramId, newValueIndex, err)
+		}
+		r.controller.DisplaySelector(param.Name(), param.CurrentValue, newValueIndex, len(param.PossibleValues)-1)
+		r.ResetIdleTimer()
+	}
+}
