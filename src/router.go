@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -104,6 +105,28 @@ func (r *Router) KnobIntSpeedScaler(handler KnobEventHandler, speed float64) Kno
 	}
 }
 
+func (r *Router) KnobIntDualSpeedScaler(handler KnobEventHandler, speed float64, shiftSpeed float64) KnobEventHandler {
+	threshold := 128 / speed
+	currentValue := 0.0
+	idleTimer := time.AfterFunc(0, func() {
+		currentValue = 0.0
+	})
+
+	return func(knobEvent minilab3.KnobEvent) {
+		relativeValue := float64(knobEvent.RelativeValue)
+		if r.controller.ShiftHeld {
+			relativeValue *= (shiftSpeed / speed)
+		}
+		idleTimer.Reset(idleTime)
+		currentValue += float64(relativeValue)
+		scaledValue := int(currentValue / threshold)
+		if scaledValue != 0 {
+			handler(minilab3.KnobEvent{KnobNumber: knobEvent.KnobNumber, RelativeValue: scaledValue})
+			currentValue -= float64(scaledValue) * threshold // This resets the currentValue but retains the fractional part
+		}
+	}
+}
+
 func (r *Router) KnobIntParamController(paramId string) KnobEventHandler {
 	param := r.synth.IntParams[paramId]
 	if param == nil {
@@ -145,6 +168,44 @@ func (r *Router) KnobSelectionParamController(paramId string) KnobEventHandler {
 			log.Printf("Failed to set param %s to index %d: %v", paramId, newValueIndex, err)
 		}
 		r.controller.DisplaySelector(param.Name(), param.CurrentValue, newValueIndex, len(param.PossibleValues)-1)
+		r.ResetIdleTimer()
+	}
+}
+
+func (r *Router) KnobDualIntParamController(largeParamId, smallParamId, paramName string) KnobEventHandler {
+	largeParam := r.synth.IntParams[largeParamId]
+	smallParam := r.synth.IntParams[smallParamId]
+	if largeParam == nil {
+		log.Fatalf("No such param %s", largeParamId)
+	}
+	if smallParam == nil {
+		log.Fatalf("No such param %s", smallParamId)
+	}
+
+	largeParamRange := largeParam.MaxValue - largeParam.MinValue + 1
+	smallParamRange := smallParam.MaxValue - smallParam.MinValue + 1
+	totalParamRange := largeParamRange * smallParamRange
+
+	currentValue := largeParam.CurrentValue*smallParamRange + smallParam.CurrentValue
+
+	return func(knobEvent minilab3.KnobEvent) {
+		currentValue += int(knobEvent.RelativeValue)
+		if currentValue < 0 {
+			currentValue = 0
+		} else if currentValue >= totalParamRange {
+			currentValue = totalParamRange - 1
+		}
+		largeValue := currentValue / smallParamRange
+		smallValue := currentValue % smallParamRange
+		err := largeParam.SetValue(largeValue)
+		if err != nil {
+			log.Printf("Failed to set param %s to %d: %v", largeParamId, largeValue, err)
+		}
+		err = smallParam.SetValue(smallValue)
+		if err != nil {
+			log.Printf("Failed to set param %s to %d: %v", smallParamId, smallValue, err)
+		}
+		r.controller.DisplayKnob(paramName, fmt.Sprintf("%d / %d", largeValue, smallValue), scaleValue(currentValue, 0, totalParamRange), false)
 		r.ResetIdleTimer()
 	}
 }

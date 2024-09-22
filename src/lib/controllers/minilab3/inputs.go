@@ -94,6 +94,7 @@ const selectorButtonCC = 118
 func (c *Controller) handleControlChange(ch, cc, val uint8) {
 	var knobCCList = []uint8{86, 87, 89, 90, 110, 111, 116, 117}
 	var faderCCList = []uint8{14, 15, 30, 31}
+	var shiftButtonCC uint8 = 27
 	if cc == selectorKnobCC {
 		if val < 63 {
 			c.SelectionEvents <- SelectionEvent{Type: SelectionLeft, Channel: ch}
@@ -105,6 +106,12 @@ func (c *Controller) handleControlChange(ch, cc, val uint8) {
 			c.SelectionEvents <- SelectionEvent{Type: SelectionClickDown, Channel: ch}
 		} else {
 			c.SelectionEvents <- SelectionEvent{Type: SelectionClickUp, Channel: ch}
+		}
+	} else if cc == shiftButtonCC {
+		if val > 0 {
+			c.ShiftHeld = true
+		} else {
+			c.ShiftHeld = false
 		}
 	} else {
 		knobIndex := slices.Index(knobCCList, cc)

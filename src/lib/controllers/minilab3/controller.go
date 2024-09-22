@@ -20,6 +20,7 @@ type Controller struct {
 	FaderEvents              chan FaderEvent
 	knobValues               []uint8
 	knobThresholdResetValues []uint8
+	ShiftHeld                bool
 }
 
 func NewController() (controller *Controller, err error) {
