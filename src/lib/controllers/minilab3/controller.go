@@ -16,12 +16,14 @@ type Controller struct {
 	midiOutPort     drivers.Out
 	NoteEvents      chan NoteEvent
 	SelectionEvents chan SelectionEvent
+	ControlEvents   chan ControlEvent
 }
 
 func NewController() (controller *Controller, err error) {
 	controller = &Controller{
 		NoteEvents:      make(chan NoteEvent, 1),
 		SelectionEvents: make(chan SelectionEvent, 1),
+		ControlEvents:   make(chan ControlEvent, 1),
 	}
 	err = controller.connectToMidiPorts()
 	if err != nil {

@@ -3,6 +3,7 @@ package minilab3
 import (
 	"fmt"
 	"log"
+	"slices"
 
 	"gitlab.com/gomidi/midi/v2"
 )
@@ -90,6 +91,8 @@ const selectorKnobCC = 28
 const selectorButtonCC = 118
 
 func (c *Controller) handleControlChange(ch, cc, val uint8) {
+	var knobCCList = []uint8{86, 87, 89, 90, 110, 111, 116, 117}
+	var faderCCList = []uint8{14, 15, 30, 31}
 	if cc == selectorKnobCC {
 		if val < 63 {
 			c.SelectionEvents <- SelectionEvent{Type: SelectionLeft, Channel: ch}
@@ -102,5 +105,28 @@ func (c *Controller) handleControlChange(ch, cc, val uint8) {
 		} else {
 			c.SelectionEvents <- SelectionEvent{Type: SelectionClickUp, Channel: ch}
 		}
+	} else {
+		knobIndex := slices.Index(knobCCList, cc)
+		if knobIndex != -1 {
+			c.ControlEvents <- ControlEvent{ControlType: ControlKnob, InputNumber: uint8(knobIndex + 1), Value: val}
+		}
+
+		faderIndex := slices.Index(faderCCList, cc)
+		if faderIndex != -1 {
+			c.ControlEvents <- ControlEvent{ControlType: ControlFader, InputNumber: uint8(faderIndex + 1), Value: val}
+		}
 	}
+}
+
+type ControlEventType uint8
+
+const (
+	ControlKnob ControlEventType = iota
+	ControlFader
+)
+
+type ControlEvent struct {
+	ControlType ControlEventType
+	InputNumber uint8
+	Value       uint8
 }

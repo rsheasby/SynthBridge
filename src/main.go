@@ -5,5 +5,6 @@ import (
 )
 
 func main() {
-	RouteMinilab3ToJT4000()
+	router := Router{}
+	router.Run()
 }
