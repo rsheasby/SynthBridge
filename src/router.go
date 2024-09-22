@@ -1,169 +1,128 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/rsheasby/SynthBridge/lib/controllers/minilab3"
 	"github.com/rsheasby/SynthBridge/lib/synths/jt4000"
 )
 
-const resetDisplayAfter = 3 * time.Second
-
-// first 8 are knobs, last 4 are faders
-var controlMap = []string{
-	"osc1Wave",
-	"osc1Adjustment",
-	"osc1Coarse",
-	"osc1Fine",
-	"lfo1Wave",
-	"lfo1Destination",
-	"lfo1Speed",
-	"lfo1Amount",
-	"vcaAttack",
-	"vcaDecay",
-	"vcaSustain",
-	"vcaRelease",
-}
+const idleTime = 3 * time.Second
 
 type Router struct {
-	controller        *minilab3.Controller
-	synth             *jt4000.Synth
-	selectingIndex    int
-	resetDisplayTimer *time.Timer
+	controller *minilab3.Controller
+	synth      *jt4000.Synth
+
+	NoteEventHandler      NoteEventHandler
+	SelectionEventHandler SelectionEventHandler
+	KnobEventHandler      KnobEventHandler
+	FaderEventHandler     FaderEventHandler
+	idleTimer             *time.Timer
 }
 
-func (r *Router) Run() (err error) {
-	synth, err := jt4000.NewSynth()
-	if err != nil {
-		return err
-	}
-	r.synth = synth
+type NoteEventHandler func(note minilab3.NoteEvent)
+type SelectionEventHandler func(selection minilab3.SelectionEvent)
+type KnobEventHandler func(knob minilab3.KnobEvent)
+type FaderEventHandler func(fader minilab3.FaderEvent)
 
+func NewRouter() (r *Router) {
 	controller, err := minilab3.NewController()
 	if err != nil {
-		return err
+		log.Fatalf("Failed to create controller: %v", err)
 	}
-	r.controller = controller
 
-	r.resetDisplayTimer = time.AfterFunc(0, r.resetDisplayFunc)
-
-	go r.routeNotes()
-	go r.routePatchSelection()
-	go r.routeControls()
-	select {}
-}
-
-func (r *Router) resetDisplayFunc() {
-	r.selectingIndex = r.synth.CurrentPatchIndex
-	r.displayCurrentPatch()
-}
-
-func (r *Router) routeNotes() {
-	log.Printf("routing notes")
-	for noteMsg := range r.controller.NoteEvents {
-		if noteMsg.Type == minilab3.NoteStart {
-			err := r.synth.SendNoteOn(noteMsg.Key, noteMsg.Velocity)
-			if err != nil {
-				log.Printf("error sending note on: %v", err)
-			}
-		} else if noteMsg.Type == minilab3.NoteEnd {
-			err := r.synth.SendNoteOff(noteMsg.Key)
-			if err != nil {
-				log.Printf("error sending note off: %v", err)
-			}
-		}
+	synth, err := jt4000.NewSynth()
+	if err != nil {
+		log.Fatalf("Failed to create synth: %v", err)
 	}
-}
 
-func (r *Router) routePatchSelection() {
-	r.selectingIndex = r.synth.CurrentPatchIndex
-	for selectionEvent := range r.controller.SelectionEvents {
-		if selectionEvent.Type == minilab3.SelectionLeft {
-			r.selectingIndex--
-			if r.selectingIndex < 0 {
-				r.selectingIndex = 0
-			}
-			err := r.controller.DisplaySelector(r.synth.PatchNames[r.selectingIndex], fmt.Sprintf("%d / 32", r.selectingIndex+1), r.selectingIndex, 31)
-			if err != nil {
-				log.Printf("error displaying selector: %v", err)
-			}
-			r.resetDisplayTimer.Reset(resetDisplayAfter)
-		} else if selectionEvent.Type == minilab3.SelectionRight {
-			r.selectingIndex++
-			if r.selectingIndex >= len(r.synth.PatchNames) {
-				r.selectingIndex = len(r.synth.PatchNames) - 1
-			}
-			err := r.controller.DisplaySelector(r.synth.PatchNames[r.selectingIndex], fmt.Sprintf("%d / 32", r.selectingIndex+1), r.selectingIndex, 31)
-			if err != nil {
-				log.Printf("error displaying selector: %v", err)
-			}
-			r.resetDisplayTimer.Reset(resetDisplayAfter)
-		} else if selectionEvent.Type == minilab3.SelectionClickDown {
-			r.synth.SetCurrentPatch(r.selectingIndex)
-			err := r.synth.GetCurrentPatchDetails()
-			if err != nil {
-				log.Printf("error getting current patch details: %v", err)
-			} else {
-				for i := 1; i <= 8; i++ {
-					paramName := controlMap[i-1]
-					if selectionParam, exists := r.synth.SelectionParams[paramName]; exists {
-						mappedValue := uint8((float64(selectionParam.CurrentValueIndex) / float64(len(selectionParam.PossibleValues)-1)) * 127.0)
-						r.controller.SetKnobValue(uint8(i), mappedValue)
-					} else if intParam, exists := r.synth.IntParams[paramName]; exists {
-						r.controller.SetKnobValue(uint8(i), uint8((float64(intParam.CurrentValue-intParam.MinValue)/float64(intParam.MaxValue-intParam.MinValue))*127.0))
-					}
-				}
-			}
-			r.resetDisplayTimer.Reset(0)
-		}
+	r = &Router{
+		controller: controller,
+		synth:      synth,
 	}
+	r.idleTimer = time.AfterFunc(0, r.DisplayCurrentPatch)
+
+	return
 }
 
-func (r *Router) displayCurrentPatch() {
+func (r *Router) DisplayCurrentPatch() {
 	r.controller.DisplayText(r.synth.CurrentPatchName, minilab3.PictogramNote, "JT-4000", minilab3.PictogramNone)
 }
 
-func (r *Router) routeControls() {
-	for controlEvent := range r.controller.ControlEvents {
-		// Locate the correct parameter based on the control type and index
-		var selectionParam *jt4000.SelectionParam = nil
-		var intParam *jt4000.IntParam = nil
-		controlIndex := int(controlEvent.InputNumber) - 1
-		if controlEvent.ControlType == minilab3.ControlFader {
-			controlIndex += 8
-		}
-		if controlIndex >= len(controlMap) {
-			log.Printf("invalid control index: %d", controlIndex)
-			continue
-		}
-		paramName := controlMap[controlIndex]
-		param, isSelectionParam := r.synth.SelectionParams[paramName]
-		if isSelectionParam {
-			selectionParam = param
-		} else {
-			param, isIntParam := r.synth.IntParams[paramName]
-			if isIntParam {
-				intParam = param
-			}
-		}
+func (r *Router) ResetIdleTimer() {
+	if r.idleTimer != nil {
+		r.idleTimer.Reset(idleTime)
+	}
+}
 
-		// Set the parameter value based on the control type and index
-		if selectionParam != nil {
-			newValueIndex := int((float64(controlEvent.Value) / 127.0) * float64(len(selectionParam.PossibleValues)-1))
-			selectionParam.SetValueByIndex(newValueIndex)
-			r.controller.DisplaySelector(selectionParam.Name(), selectionParam.CurrentValue, newValueIndex, len(selectionParam.PossibleValues)-1)
-			r.resetDisplayTimer.Reset(resetDisplayAfter)
-		} else if intParam != nil {
-			mappedValue := int((float64(controlEvent.Value)/127.0)*float64(intParam.MaxValue-intParam.MinValue) + float64(intParam.MinValue))
-			intParam.SetValue(mappedValue)
-			if controlEvent.ControlType == minilab3.ControlKnob {
-				r.controller.DisplayKnob(intParam.Name(), fmt.Sprintf("%d", mappedValue), controlEvent.Value, false)
-			} else {
-				r.controller.DisplayFader(intParam.Name(), fmt.Sprintf("%d", mappedValue), controlEvent.Value, false)
-			}
-			r.resetDisplayTimer.Reset(resetDisplayAfter)
+func (r *Router) Run() {
+	for {
+		select {
+		case noteEvent := <-r.controller.NoteEvents:
+			r.NoteEventHandler(noteEvent)
+		case selectionEvent := <-r.controller.SelectionEvents:
+			r.SelectionEventHandler(selectionEvent)
+		case knobEvent := <-r.controller.KnobEvents:
+			r.KnobEventHandler(knobEvent)
+		case faderEvent := <-r.controller.FaderEvents:
+			r.FaderEventHandler(faderEvent)
 		}
+	}
+}
+
+func (r *Router) KnobEventDispatcher(handlers []KnobEventHandler) KnobEventHandler {
+	return func(knobEvent minilab3.KnobEvent) {
+		if knobEvent.KnobNumber > uint8(len(handlers)) {
+			log.Printf("No handler for knob %d", knobEvent.KnobNumber)
+			return
+		}
+		handlers[knobEvent.KnobNumber-1](knobEvent)
+	}
+}
+
+func scaleValue(value int, min int, max int) uint8 {
+	return uint8((float64(value-min) / float64(max-min)) * 127.0)
+}
+
+func (r *Router) KnobIntSpeedScaler(handler KnobEventHandler, speed float64) KnobEventHandler {
+	threshold := 128 / speed
+	currentValue := 0.0
+	idleTimer := time.AfterFunc(0, func() {
+		currentValue = 0.0
+	})
+
+	return func(knobEvent minilab3.KnobEvent) {
+		idleTimer.Reset(idleTime)
+		currentValue += float64(knobEvent.RelativeValue)
+		scaledValue := int(currentValue / threshold)
+		if scaledValue != 0 {
+			handler(minilab3.KnobEvent{KnobNumber: knobEvent.KnobNumber, RelativeValue: scaledValue})
+			currentValue -= float64(scaledValue) * threshold // This resets the currentValue but retains the fractional part
+		}
+	}
+}
+
+func (r *Router) KnobIntParamController(paramId string) KnobEventHandler {
+	param := r.synth.IntParams[paramId]
+	if param == nil {
+		log.Fatalf("No such param %s", paramId)
+	}
+
+	return func(knobEvent minilab3.KnobEvent) {
+		newValue := param.CurrentValue + int(knobEvent.RelativeValue)
+		if newValue < param.MinValue {
+			newValue = param.MinValue
+		} else if newValue > param.MaxValue {
+			newValue = param.MaxValue
+		}
+		proportionalValue := scaleValue(newValue, param.MinValue, param.MaxValue)
+		err := param.SetValue(newValue)
+		if err != nil {
+			log.Printf("Failed to set param %s to %d: %v", paramId, newValue, err)
+		}
+		r.controller.DisplayKnob(param.Name(), strconv.Itoa(param.CurrentValue), proportionalValue, false)
+		r.ResetIdleTimer()
 	}
 }

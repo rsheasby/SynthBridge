@@ -24,6 +24,7 @@ func (c *Controller) SetKnobValue(knob uint8, value uint8) error {
 	if err != nil {
 		return fmt.Errorf("failed to send sysex message: %v", err)
 	}
+	c.knobValues[knob-1] = value
 	return nil
 }
 
@@ -107,26 +108,36 @@ func (c *Controller) handleControlChange(ch, cc, val uint8) {
 		}
 	} else {
 		knobIndex := slices.Index(knobCCList, cc)
+		// Convert change in absolute value to relative event
 		if knobIndex != -1 {
-			c.ControlEvents <- ControlEvent{ControlType: ControlKnob, InputNumber: uint8(knobIndex + 1), Value: val}
+			// Sometimes when we do a threshold reset, one more message still comes in which is relative to the pre-reset value.
+			// If our value is greater than 5, we know that's what happened, so we use our reset value as the baseline instead.
+			relativeValue := int(val) - int(c.knobValues[knobIndex])
+			if relativeValue > 5 {
+				relativeValue = int(val) - int(c.knobThresholdResetValues[knobIndex])
+			} else {
+				c.knobValues[knobIndex] = val
+			}
+			c.KnobEvents <- KnobEvent{KnobNumber: uint8(knobIndex + 1), RelativeValue: relativeValue}
+			if val < 20 || val > 100 {
+				c.knobThresholdResetValues[knobIndex] = val
+				c.centerKnobValue(uint8(knobIndex + 1))
+			}
 		}
 
 		faderIndex := slices.Index(faderCCList, cc)
 		if faderIndex != -1 {
-			c.ControlEvents <- ControlEvent{ControlType: ControlFader, InputNumber: uint8(faderIndex + 1), Value: val}
+			c.FaderEvents <- FaderEvent{FaderNumber: uint8(faderIndex + 1), AbsoluteValue: val}
 		}
 	}
 }
 
-type ControlEventType uint8
+type KnobEvent struct {
+	KnobNumber    uint8
+	RelativeValue int
+}
 
-const (
-	ControlKnob ControlEventType = iota
-	ControlFader
-)
-
-type ControlEvent struct {
-	ControlType ControlEventType
-	InputNumber uint8
-	Value       uint8
+type FaderEvent struct {
+	FaderNumber   uint8
+	AbsoluteValue uint8
 }

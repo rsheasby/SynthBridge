@@ -11,19 +11,25 @@ const midiInPortName = "Minilab3 MIDI"
 const midiOutPortName = "Minilab3 MIDI"
 
 type Controller struct {
-	midiInPort      drivers.In
-	midiInStop      func()
-	midiOutPort     drivers.Out
-	NoteEvents      chan NoteEvent
-	SelectionEvents chan SelectionEvent
-	ControlEvents   chan ControlEvent
+	midiInPort               drivers.In
+	midiInStop               func()
+	midiOutPort              drivers.Out
+	NoteEvents               chan NoteEvent
+	SelectionEvents          chan SelectionEvent
+	KnobEvents               chan KnobEvent
+	FaderEvents              chan FaderEvent
+	knobValues               []uint8
+	knobThresholdResetValues []uint8
 }
 
 func NewController() (controller *Controller, err error) {
 	controller = &Controller{
-		NoteEvents:      make(chan NoteEvent, 1),
-		SelectionEvents: make(chan SelectionEvent, 1),
-		ControlEvents:   make(chan ControlEvent, 1),
+		NoteEvents:               make(chan NoteEvent, 1),
+		SelectionEvents:          make(chan SelectionEvent, 1),
+		KnobEvents:               make(chan KnobEvent, 1),
+		FaderEvents:              make(chan FaderEvent, 1),
+		knobValues:               make([]uint8, 8),
+		knobThresholdResetValues: make([]uint8, 8),
 	}
 	err = controller.connectToMidiPorts()
 	if err != nil {
@@ -40,7 +46,26 @@ func NewController() (controller *Controller, err error) {
 		return nil, err
 	}
 
+	err = controller.seedKnobValues()
+	if err != nil {
+		return nil, err
+	}
+
 	return
+}
+
+func (c *Controller) seedKnobValues() (err error) {
+	for i := 1; i <= 8; i++ {
+		err := c.centerKnobValue(uint8(i))
+		if err != nil {
+			return err
+		}
+	}
+	return
+}
+
+func (c *Controller) centerKnobValue(knob uint8) (err error) {
+	return c.SetKnobValue(knob, 62)
 }
 
 func (c *Controller) connectToMidiPorts() (err error) {
